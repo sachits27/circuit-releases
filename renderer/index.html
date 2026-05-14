@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CIRCUIT by Circle Pro Audio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f0f0f0;--bg2:#fff;--bg3:#fafafa;
+      --border:#e0e0e0;--border2:#ccc;
+      --text:#1a1a1a;--text2:#555;--text3:#999;
+      --green:#16a34a;--green2:#15803d;
+      --red:#dc2626;--rack-bg:#fff;
+      --topbar:#111;--topbar2:#0d0d0d;
+    }
+    body{font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:var(--text);background:var(--bg);overflow:hidden}
+    .app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+    /* Top bars */
+    .tb1{background:var(--topbar);height:42px;padding:0 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;-webkit-app-region:drag}
+    .tb1 button,.tb1 select,.tb1 input{-webkit-app-region:no-drag}
+    /* macOS traffic lights need space on left */
+    .tb1-spacer{width:70px;flex-shrink:0}
+    .tb2{background:var(--topbar2);height:32px;padding:0 14px;display:flex;align-items:center;gap:8px;border-top:1px solid #1e1e1e;flex-shrink:0}
+
+    /* Layout */
+    .body{flex:1;display:flex;overflow:hidden;min-height:0}
+    .sb{width:200px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg2);border-right:1px solid var(--border)}
+    .mn{flex:1;overflow:auto;padding:14px;background:var(--bg);display:flex;gap:12px;align-items:flex-start}
+    .rp{width:186px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+
+    /* Sidebar items */
+    .ec{padding:5px 8px;cursor:grab;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;user-select:none}
+    .ec:hover{background:var(--bg3)}
+    .ec:active{cursor:grabbing}
+
+    /* Pills */
+    .pl{font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2)}
+    .pl.on{color:#fff;border-color:transparent}
+
+    /* Rack tabs */
+    .rtab{font-size:10px;font-weight:600;padding:3px 10px;cursor:pointer;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text2)}
+    .rtab.on{background:#fff;border-color:#bbb;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+    /* Right panel */
+    .rs{padding:8px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+    .rl{font-size:8px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+    .ir{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid var(--border)}
+
+    /* Toggle */
+    .tog{width:34px;height:19px;background:var(--bg3);border-radius:10px;border:1px solid var(--border2);position:relative;cursor:pointer;padding:0;transition:background .15s;flex-shrink:0}
+    .tog.on{background:var(--green);border-color:var(--green)}
+    .tog::after{content:'';position:absolute;left:2px;top:2px;width:13px;height:13px;background:#fff;border-radius:50%;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .tog.on::after{left:17px}
+
+    /* Form elements */
+    input,select,textarea{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:5px;padding:5px 8px;font-size:11px;width:100%;outline:none;font-family:inherit}
+    input:focus,select:focus,textarea:focus{border-color:var(--green)}
+    select option{background:#fff;color:#1a1a1a}
+
+    /* Buttons */
+    button{cursor:pointer;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:5px;padding:4px 10px;font-size:10px;font-weight:500;font-family:inherit}
+    button:hover{background:var(--bg3);color:var(--text)}
+    .bg{background:var(--green);border-color:var(--green);color:#fff}
+    .bg:hover{background:var(--green2)}
+    .br{border-color:var(--red);color:var(--red)}
+    .br:hover{background:#fef2f2}
+
+    /* Overlays */
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(4px)}
+    .bx{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px;width:360px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+
+    /* Group dots */
+    .gd{width:9px;height:9px;border-radius:50%;border:1px solid rgba(0,0,0,.12);cursor:pointer;flex-shrink:0}
+
+    /* Update banner */
+    #update-banner{display:none;background:#0052A5;color:#fff;font-size:11px;padding:6px 14px;text-align:center;flex-shrink:0}
+    #update-banner button{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4);color:#fff;font-size:10px;padding:2px 10px;margin-left:10px}
+    #update-banner button:hover{background:rgba(255,255,255,.35)}
+
+    /* Settings panel */
+    .settings-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);gap:10px}
+    .settings-row label{font-size:11px;color:var(--text);flex-shrink:0}
+
+    /* Claude assistant input */
+    #ai-bar{border-top:1px solid var(--border);padding:6px 8px;flex-shrink:0;display:flex;gap:5px}
+    #ai-input{flex:1;font-size:10px;padding:4px 8px}
+    #ai-status{font-size:9px;color:var(--text3);padding:2px 8px;flex-shrink:0}
+
+    /* macOS specific: window chrome */
+    @media (prefers-color-scheme: dark){
+      :root{--bg:#1a1a1a;--bg2:#222;--bg3:#2a2a2a;--border:#333;--border2:#444;--text:#e8e8e8;--text2:#aaa;--text3:#666;--rack-bg:#1e1e1e}
+      .rtab.on{background:#2a2a2a;border-color:#555;color:#fff}
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- UPDATE BANNER -->
+  <div id="update-banner">
+    🎉 A new version of CIRCUIT is ready to install!
+    <button onclick="installUpdate()">Restart &amp; Update</button>
+    <button onclick="document.getElementById('update-banner').style.display='none'" style="margin-left:4px">Later</button>
+  </div>
+
+  <!-- TOP BAR 1: Brand + project controls -->
+  <div class="tb1">
+    <!-- Space for macOS traffic lights (close/minimise/fullscreen buttons) -->
+    <div class="tb1-spacer" id="mac-spacer"></div>
+
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0">
+      <circle cx="10" cy="10" r="8.5" stroke="#555" stroke-width="1.4"/>
+      <circle cx="10" cy="10" r="3.5" stroke="#555" stroke-width="1" opacity=".5"/>
+      <circle cx="10" cy="10" r="1.6" fill="#16a34a"/>
+      <line x1="10" y1="1.5" x2="10" y2="4" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="10" y1="16" x2="10" y2="18.5" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="1.5" y1="10" x2="4" y2="10" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="16" y1="10" x2="18.5" y2="10" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div style="flex-shrink:0">
+      <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#fff;line-height:1">CIRCUIT</div>
+      <div style="font-size:7px;color:#444;letter-spacing:1px">by Circle Pro Audio</div>
+    </div>
+    <div style="width:1px;height:18px;background:#2a2a2a;flex-shrink:0"></div>
+    <select id="psel" style="max-width:130px;font-size:9px;background:#1a1a1a;border-color:#333;color:#999;padding:2px 6px"></select>
+    <button id="bSv" style="font-size:9px;padding:2px 8px;background:#1a1a1a;border-color:#333;color:#888">💾 Save</button>
+    <button id="bOF" style="font-size:9px;padding:2px 8px;background:#1a1a1a;border-color:#333;color:#888">📂 Open folder</button>
+    <button id="bSt" style="font-size:9px;padding:2px 8px;background:#1a1a1a;border-color:#333;color:#888">⚙ Settings</button>
+  </div>
+
+  <!-- TOP BAR 2: View toggle + PDF -->
+  <div class="tb2">
+    <span style="font-size:9px;color:#555;flex-shrink:0">Simplified</span>
+    <button class="tog" id="stog" onclick="toggleSim()"></button>
+    <span style="font-size:9px;color:#555;flex-shrink:0">Detailed</span>
+    <div style="flex:1"></div>
+    <button id="bPDF" class="bg" style="font-size:10px;padding:5px 16px;flex-shrink:0">⬇ Export PDF</button>
+  </div>
+
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <div class="sb">
+      <div style="padding:6px;flex-shrink:0"><input id="srch" placeholder="Search equipment…" style="font-size:10px"/></div>
+      <div id="pls" style="padding:2px 6px 4px;display:flex;flex-wrap:wrap;gap:2px;flex-shrink:0"></div>
+      <div style="padding:0 6px 3px;flex-shrink:0"><select id="bsel" style="font-size:10px"></select></div>
+      <div style="padding:0 6px 2px;flex-shrink:0"><span id="cnt" style="font-size:9px;color:var(--text3)"></span></div>
+      <div id="eql" style="flex:1;overflow-y:auto"></div>
+
+      <!-- Claude AI bar at bottom of sidebar -->
+      <div id="ai-bar">
+        <input id="ai-input" placeholder='Ask Claude: "Add Shure AD4D"' style="font-size:10px"/>
+        <button id="ai-btn" class="bg" style="padding:3px 8px;font-size:10px" onclick="claudeAsk()">Ask</button>
+      </div>
+      <div id="ai-status"></div>
+
+      <div style="padding:6px;border-top:1px solid var(--border);flex-shrink:0">
+        <button id="oCE" style="width:100%;padding:4px 0;font-size:10px">+ Add Custom Device</button>
+      </div>
+    </div>
+
+    <!-- RACK CANVAS -->
+    <div class="mn">
+      <div style="flex-shrink:0">
+        <div style="display:flex;align-items:flex-start">
+          <div id="ul" style="display:flex;flex-direction:column;padding-top:10px;padding-bottom:10px;margin-right:4px"></div>
+          <div>
+            <div style="height:10px;background:#bbb;border:1.5px solid #888;border-bottom:none;border-radius:3px 3px 0 0;width:260px"></div>
+            <div id="rb" style="width:260px;background:var(--rack-bg);border:1.5px solid #888;position:relative;overflow:hidden"></div>
+            <div style="height:10px;background:#bbb;border:1.5px solid #888;border-top:none;border-radius:0 0 3px 3px;width:260px"></div>
+            <div style="display:flex;justify-content:space-around;padding:0 20px;margin-top:3px">
+              <div style="width:22px;height:12px;background:#888;border-radius:4px;border:1px solid #666"></div>
+              <div style="width:22px;height:12px;background:#888;border-radius:4px;border:1px solid #666"></div>
+            </div>
+          </div>
+        </div>
+        <div id="tabs" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="rp">
+      <div class="rs">
+        <div class="rl">Rack options</div>
+        <input id="rname" placeholder="Rack name" style="font-size:11px;font-weight:600;margin-bottom:4px"/>
+        <select id="szs" style="font-size:10px;margin-bottom:3px"></select>
+      </div>
+      <div class="rs">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:10px">Enable wheels</span><button class="tog on" onclick="this.classList.toggle('on')"></button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:10px">Row numbering</span><button class="tog on" onclick="this.classList.toggle('on')"></button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:10px">Rack frame</span><button class="tog on" onclick="this.classList.toggle('on')"></button></div>
+        </div>
+      </div>
+      <div class="rs">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <div class="rl" style="margin:0">Groups</div>
+          <button id="aGrp" style="font-size:9px;padding:1px 6px;border-color:var(--green);color:var(--green)">+ Add</button>
+        </div>
+        <div id="grpl"></div>
+        <div id="iga" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+          <div style="font-size:8px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Assign selected</div>
+          <div id="igab" style="display:flex;flex-wrap:wrap;gap:3px"></div>
+        </div>
+      </div>
+      <div class="rs" style="flex:1;overflow-y:auto">
+        <div class="rl">Rack summary</div>
+        <div class="ir"><span style="color:var(--text2)">Devices</span><span id="sd" style="font-weight:600"></span></div>
+        <div class="ir"><span style="color:var(--text2)">U used</span><span id="su" style="font-weight:600"></span></div>
+        <div class="ir"><span style="color:var(--text2)">Weight</span><span id="sw" style="font-weight:600"></span></div>
+        <div class="ir" style="border:none"><span style="color:var(--text2)">Power</span><span id="sp" style="font-weight:600"></span></div>
+        <div style="margin-top:7px">
+          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div id="ub" style="height:100%;background:var(--green);width:0%;border-radius:3px;transition:width .2s"></div></div>
+          <div id="ul2" style="font-size:9px;color:var(--text3);margin-top:3px;text-align:center"></div>
+        </div>
+        <div id="sel" style="display:none;margin-top:9px;padding-top:9px;border-top:1px solid var(--border)">
+          <div class="rl">Selected</div>
+          <div id="selc"></div>
+          <button id="rmv" class="br" style="width:100%;margin-top:5px;font-size:10px;padding:4px 0">Remove from rack</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .body -->
+
+  <!-- SETTINGS OVERLAY -->
+  <div class="ov" id="stov" style="display:none">
+    <div class="bx" style="width:380px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:14px">⚙ Settings</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div class="settings-row">
+          <label>Anthropic API key</label>
+          <input id="api-key-input" type="password" placeholder="sk-ant-..." style="width:200px"/>
+        </div>
+        <div style="font-size:9px;color:var(--text3);padding:3px 0 8px">
+          Get your key at <span style="color:var(--green);cursor:pointer" onclick="openExternal('https://console.anthropic.com')">console.anthropic.com</span><br>
+          Stored securely on this device, never sent anywhere except Anthropic.
+        </div>
+        <div class="settings-row">
+          <label>Check for updates</label>
+          <button id="upd-btn" style="font-size:10px;padding:3px 10px" onclick="checkUpdates()">Check now</button>
+        </div>
+        <div id="upd-status" style="font-size:10px;color:var(--text3);padding:3px 0 8px"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:14px">
+        <button id="save-settings-btn" class="bg" style="flex:1;padding:7px 0;font-size:11px" onclick="saveSettings()">Save</button>
+        <button onclick="document.getElementById('stov').style.display='none'" style="padding:7px 12px;font-size:11px">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD CUSTOM DEVICE OVERLAY -->
+  <div class="ov" id="cem" style="display:none">
+    <div class="bx" style="width:300px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px">Add custom device</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <input id="fn" placeholder="Name *"/>
+        <input id="fb" placeholder="Brand"/>
+        <input id="fd" placeholder="Description"/>
+        <div style="display:flex;gap:5px">
+          <select id="fc" style="flex:1"></select>
+          <select id="fu" style="width:58px"><option value="1">1U</option><option value="2">2U</option><option value="3">3U</option></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1"><label style="font-size:9px;color:var(--text2)">Weight (kg)</label><input type="number" id="fwt" value="1" step="0.1" style="margin-top:2px"/></div>
+          <div style="flex:1"><label style="font-size:9px;color:var(--text2)">Power (W)</label><input type="number" id="fpw" value="0" step="10" style="margin-top:2px"/></div>
+        </div>
+        <div style="display:flex;gap:5px;margin-top:2px">
+          <button id="sce" class="bg" style="flex:1;padding:6px 0">Add to library</button>
+          <button id="cce" style="padding:6px 10px">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .app -->
+
+<script src="app.js"></script>
+</body>
+</html>

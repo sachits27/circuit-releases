@@ -1,0 +1,58 @@
+{
+  "name": "circuit-proaudio",
+  "version": "1.0.1",
+  "description": "CIRCUIT by Circle Pro Audio – Professional Rack Design Studio",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --mac --win",
+    "publish": "electron-builder --mac --publish always"
+  },
+  "build": {
+    "appId": "com.circleproaudio.circuit",
+    "productName": "CIRCUIT",
+    "copyright": "Copyright © 2025 Circle Pro Audio",
+    "publish": {
+      "provider": "github",
+      "owner": "sachits27",
+      "repo": "circuit-releases"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "dmg": {
+      "title": "Install CIRCUIT",
+      "backgroundColor": "#111111"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico"
+    },
+    "files": ["main.js", "preload.js", "renderer/**/*", "assets/**/*"],
+    "extraResources": []
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.20.0",
+    "electron-updater": "^6.1.7",
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^29.1.0",
+    "electron-builder": "^24.9.1"
+  }
+}
