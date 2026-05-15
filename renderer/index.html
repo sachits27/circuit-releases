@@ -255,25 +255,68 @@
 
   <!-- ADD CUSTOM DEVICE OVERLAY -->
   <div class="ov" id="cem" style="display:none">
-    <div class="bx" style="width:300px">
-      <div style="font-size:13px;font-weight:600;margin-bottom:12px">Add custom device</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <input id="fn" placeholder="Name *"/>
-        <input id="fb" placeholder="Brand"/>
-        <input id="fd" placeholder="Description"/>
-        <div style="display:flex;gap:5px">
-          <select id="fc" style="flex:1"></select>
-          <select id="fu" style="width:58px"><option value="1">1U</option><option value="2">2U</option><option value="3">3U</option></select>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;width:740px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
+
+      <!-- Header tabs -->
+      <div style="display:flex;align-items:center;border-bottom:1px solid var(--border);padding:0 18px;flex-shrink:0">
+        <button id="cpTab" onclick="cpSetTab('panel')" style="border:none;border-bottom:2px solid var(--green);border-radius:0;padding:10px 14px;font-weight:600;color:var(--green);font-size:11px;background:transparent">Connector Panel</button>
+        <button id="cgTab" onclick="cpSetTab('generic')" style="border:none;border-bottom:2px solid transparent;border-radius:0;padding:10px 14px;font-weight:600;color:var(--text3);font-size:11px;background:transparent">Generic Device</button>
+        <div style="flex:1"></div>
+        <button id="cce" style="border:none;background:transparent;font-size:16px;color:var(--text3);padding:4px 8px">✕</button>
+      </div>
+
+      <!-- CONNECTOR PANEL TAB -->
+      <div id="cpPane" style="display:flex;flex:1;overflow:hidden;min-height:0">
+
+        <!-- Left: Palette -->
+        <div style="width:260px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:10px 12px 6px;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;flex-shrink:0">Connectors — click to add</div>
+          <div id="cpPalette" style="flex:1;overflow-y:auto;padding:0 8px 8px"></div>
         </div>
-        <div style="display:flex;gap:8px">
-          <div style="flex:1"><label style="font-size:9px;color:var(--text2)">Weight (kg)</label><input type="number" id="fwt" value="1" step="0.1" style="margin-top:2px"/></div>
-          <div style="flex:1"><label style="font-size:9px;color:var(--text2)">Power (W)</label><input type="number" id="fpw" value="0" step="10" style="margin-top:2px"/></div>
-        </div>
-        <div style="display:flex;gap:5px;margin-top:2px">
-          <button id="sce" class="bg" style="flex:1;padding:6px 0">Add to library</button>
-          <button id="cce" style="padding:6px 10px">Cancel</button>
+
+        <!-- Right: Preview + controls -->
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+
+          <!-- Panel SVG preview -->
+          <div style="flex:1;overflow-y:auto;padding:14px;background:var(--bg3);border-bottom:1px solid var(--border)">
+            <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Panel preview</div>
+            <div id="cpPreview" style="font-size:10px;color:var(--text3)">Add connectors from the left →</div>
+          </div>
+
+          <!-- Stats + name + buttons -->
+          <div style="padding:12px 14px;flex-shrink:0">
+            <div id="cpStats" style="display:flex;gap:14px;margin-bottom:10px;font-size:10px;color:var(--text2)"></div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input id="cpName" placeholder="Panel name" style="flex:1"/>
+              <button id="cpClearBtn" onclick="cpClear()" style="padding:5px 10px;font-size:10px;flex-shrink:0">Clear</button>
+              <button id="cpAdd" class="bg" style="padding:5px 14px;font-size:11px;font-weight:600;flex-shrink:0" disabled onclick="cpAddPanel()">Add to library</button>
+            </div>
+            <div id="cpStatus" style="font-size:10px;color:var(--text3);margin-top:6px;min-height:14px"></div>
+          </div>
         </div>
       </div>
+
+      <!-- GENERIC DEVICE TAB -->
+      <div id="cgPane" style="display:none;padding:18px">
+        <div style="display:flex;flex-direction:column;gap:6px;max-width:320px">
+          <input id="fn" placeholder="Name *"/>
+          <input id="fb" placeholder="Brand"/>
+          <input id="fd" placeholder="Description"/>
+          <div style="display:flex;gap:5px">
+            <select id="fc" style="flex:1"></select>
+            <select id="fu" style="width:58px"><option value="1">1U</option><option value="2">2U</option><option value="3">3U</option></select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1"><label style="font-size:9px;color:var(--text2)">Weight (kg)</label><input type="number" id="fwt" value="1" step="0.1" style="margin-top:2px"/></div>
+            <div style="flex:1"><label style="font-size:9px;color:var(--text2)">Power (W)</label><input type="number" id="fpw" value="0" step="10" style="margin-top:2px"/></div>
+          </div>
+          <div style="display:flex;gap:5px;margin-top:4px">
+            <button id="sce" class="bg" style="flex:1;padding:7px 0">Add to library</button>
+            <button onclick="document.getElementById('cem').style.display='none'" style="padding:7px 12px">Cancel</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 

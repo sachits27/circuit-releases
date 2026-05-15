@@ -165,6 +165,10 @@ const BASE_EQ=[
   {id:"apc-001",brand:"APC",name:"AP7900B",category:"Power",uSize:1,desc:"8-outlet Switched PDU",kg:2.2,w:0},
   {id:"acc-001",brand:"Generic",name:"Blanking Panel 1U",category:"Accessory",uSize:1,desc:"1U blank panel",kg:.2,w:0},
   {id:"acc-002",brand:"Generic",name:"Blanking Panel 2U",category:"Accessory",uSize:2,desc:"2U blank panel",kg:.4,w:0},
+  {id:"la-lk19p",brand:"LINK Audio",name:"LK19 Panel 1U",category:"Patching",uSize:1,desc:"19-pin multipin panel",kg:.8,w:0},
+  {id:"la-lk25p",brand:"LINK Audio",name:"LK25 Panel 1U",category:"Patching",uSize:1,desc:"25-pin D-sub panel",kg:.7,w:0},
+  {id:"la-lk37p",brand:"LINK Audio",name:"LK37 Panel 1U",category:"Patching",uSize:1,desc:"37-pin multipin panel",kg:.9,w:0},
+  {id:"la-lk54p",brand:"LINK Audio",name:"LK54 Panel 1U",category:"Patching",uSize:1,desc:"54-pin multipin panel",kg:1.0,w:0},
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -569,6 +573,558 @@ If the user asks something else (not adding equipment), return: {"message": "you
   }
 }
 
+// ─── Connector Panel Builder ──────────────────────────────────────────────────
+// w = connector width in mm on a standard panel (usable row width = 400mm)
+const CONNECTOR_DATA={
+  'Neutrik':{color:'#FF6B00',connectors:[
+    // XLR — D-series 24mm panel cutout, ~30mm panel pitch
+    {id:'n-xlr3f', name:'XLR 3F',     desc:'NC3FD-L-B-1 · 24mm ∅',  w:30, color:'#E85D00', category:'Patching', kg:0.05},
+    {id:'n-xlr3m', name:'XLR 3M',     desc:'NC3MD-LX · 24mm ∅',      w:30, color:'#C84000', category:'Patching', kg:0.05},
+    {id:'n-xlr5f', name:'XLR 5F',     desc:'NC5FD-L-B · 24mm ∅',     w:30, color:'#D95000', category:'Patching', kg:0.05},
+    {id:'n-xlr5m', name:'XLR 5M',     desc:'NC5MD-LX · 24mm ∅',      w:30, color:'#B83800', category:'Patching', kg:0.05},
+    // Jacks
+    {id:'n-trs',   name:'TRS Jack',   desc:'NJ3FP6C · M12 bushing',   w:16, color:'#FF8833', category:'Patching', kg:0.04},
+    {id:'n-ts',    name:'TS Jack',    desc:'NJ2FP6C · M12 bushing',   w:16, color:'#FF9955', category:'Patching', kg:0.04},
+    // speakON — D-size flange, 24mm cutout
+    {id:'n-spk2',  name:'speakON 2',  desc:'NL2MPXX · 2-pole',        w:32, color:'#EF4444', category:'Patching', kg:0.08},
+    {id:'n-spk4',  name:'speakON 4',  desc:'NL4MPXX · 4-pole',        w:32, color:'#DC2626', category:'Patching', kg:0.09},
+    {id:'n-spk8',  name:'speakON 8',  desc:'NL8MPXX · 8-pole',        w:44, color:'#B91C1C', category:'Patching', kg:0.13},
+    // etherCON — D-type rectangular body
+    {id:'n-eth',   name:'etherCON',   desc:'NE8FDP · D-type CAT5e',   w:36, color:'#1BA0D7', category:'Network',  kg:0.06},
+    // powerCON TRUE1 — keyed oval twist-lock, ~48mm wide
+    {id:'n-pwr-f', name:'pCON TRUE1 ↓',desc:'NAC3FPX-TRUE1 · inlet',  w:48, color:'#1B5E20', category:'Power',    kg:0.12},
+    {id:'n-pwr-m', name:'pCON TRUE1 ↑',desc:'NAC3MPX-TRUE1 · outlet', w:48, color:'#2E7D32', category:'Power',    kg:0.12},
+    // Fibre
+    {id:'n-opt',   name:'opticalCON', desc:'NO2D · dual fibre',        w:34, color:'#8B5CF6', category:'Patching', kg:0.08},
+    {id:'n-tru',   name:'TruCON',     desc:'Fibre + power hybrid',     w:34, color:'#7C3AED', category:'Patching', kg:0.10},
+  ]},
+  'LINK Audio':{color:'#0066CC',connectors:[
+    {id:'la-lk13', name:'LK13',        desc:'13-pin · Shell 20',  w:38, color:'#0066CC', category:'Patching', kg:0.15},
+    {id:'la-lk19', name:'LK19',        desc:'19-pin · Shell 22',  w:44, color:'#0052A5', category:'Patching', kg:0.20},
+    {id:'la-lk25', name:'LK25',        desc:'25-pin · Shell 24',  w:50, color:'#004080', category:'Patching', kg:0.22},
+    {id:'la-lk37', name:'LK37',        desc:'37-pin · Shell 28',  w:60, color:'#003D7A', category:'Patching', kg:0.28},
+    {id:'la-lk54', name:'LK54',        desc:'54-pin · Shell 32',  w:68, color:'#002952', category:'Patching', kg:0.35},
+    {id:'la-pl-b', name:'PowerLink B', desc:'Single-pole Blue 16A',w:32, color:'#1565C0', category:'Power',    kg:0.10},
+    {id:'la-pl-r', name:'PowerLink R', desc:'Single-pole Red 16A', w:32, color:'#B71C1C', category:'Power',    kg:0.10},
+    {id:'la-pl-bk',name:'PowerLink Bk',desc:'Single-pole Black 16A',w:32,color:'#222222', category:'Power',    kg:0.10},
+  ]},
+  'BALS':{color:'#E65100',connectors:[
+    // Schuko (domestic) — 50×50mm flange, 16A 250V 2P+PE IP54
+    {id:'bals-schuko',   name:'Schuko',        desc:'71102 · 16A 250V · IP54',            w:55,  color:'#757575', category:'Power', kg:0.18},
+    // CEE industrial blue (2P+PE) — 75×75mm flange
+    {id:'bals-cee16-3',  name:'CEE 16A 3-pin', desc:'136861 · 16A 230V 2P+PE · IP54',    w:80,  color:'#1565C0', category:'Power', kg:0.25},
+    {id:'bals-cee32-3',  name:'CEE 32A 3-pin', desc:'137031 · 32A 230V 2P+PE · IP54',    w:80,  color:'#0D47A1', category:'Power', kg:0.28},
+    // CEE industrial blue (3p+N+PE 5-pin) — 75×75mm flange
+    {id:'bals-cee16-5',  name:'CEE 16A 5-pin', desc:'1320011 · 16A 400V 3p+N+PE · IP54', w:80,  color:'#1976D2', category:'Power', kg:0.28},
+    {id:'bals-cee32-5',  name:'CEE 32A 5-pin', desc:'1320021 · 32A 400V 3p+N+PE · IP54', w:80,  color:'#1565C0', category:'Power', kg:0.30},
+    {id:'bals-cee63-5',  name:'CEE 63A 5-pin', desc:'136 · 63A 400V 3p+N+PE · IP44',     w:112, color:'#0D47A1', category:'Power', kg:0.55},
+    // CEE industrial red (3P+PE 4-pin) — 75×75mm flange
+    {id:'bals-cee16-4r', name:'CEE 16A 4-pin', desc:'13693 · 16A 415V 3P+PE · IP44',     w:80,  color:'#C62828', category:'Power', kg:0.26},
+    {id:'bals-cee32-4r', name:'CEE 32A 4-pin', desc:'13710 · 32A 415V 3P+PE · IP44',     w:80,  color:'#B71C1C', category:'Power', kg:0.30},
+    {id:'bals-cee63-4r', name:'CEE 63A 4-pin', desc:'134 · 63A 415V 3P+PE · IP44',       w:112, color:'#7F0000', category:'Power', kg:0.55},
+    // Event sockets (blue, 3p+N+PE) — same ~75mm footprint
+    {id:'bals-ev16-5',   name:'Event 16A',      desc:'28314 · 16A 400V 3p+N+PE · IP44',  w:80,  color:'#1E88E5', category:'Power', kg:0.30},
+    {id:'bals-ev32-5',   name:'Event 32A',      desc:'28298 · 32A 400V 3p+N+PE · IP44',  w:80,  color:'#1565C0', category:'Power', kg:0.35},
+    // Event inlets (panel-mount appliance inlet)
+    {id:'bals-evi16-5',  name:'Event Inlet 16A',desc:'120436 · 16A 400V inlet · IP44',   w:80,  color:'#0277BD', category:'Power', kg:0.28},
+    {id:'bals-evi32-5',  name:'Event Inlet 32A',desc:'120441 · 32A 400V inlet · IP44',   w:80,  color:'#01579B', category:'Power', kg:0.32},
+  ]},
+  'Ten47':{color:'#CC0000',connectors:[
+    {id:'t47-pc8m',   name:'PA-COM 8M',   desc:'8-pin male · Shell 22', w:42, color:'#AA0000', category:'Patching', kg:0.18},
+    {id:'t47-pc8f',   name:'PA-COM 8F',   desc:'8-pin female · Shell 22',w:42,color:'#880000', category:'Patching', kg:0.18},
+    {id:'t47-pc19m',  name:'PA-COM 19M',  desc:'19-pin male · Shell 20',w:38, color:'#AA0000', category:'Patching', kg:0.16},
+    {id:'t47-pc19f',  name:'PA-COM 19F',  desc:'19-pin female · Shell 20',w:38,color:'#880000',category:'Patching', kg:0.16},
+    {id:'t47-tl25m',  name:'TourLine 25M',desc:'25-pin male · Shell 32', w:68, color:'#CC3300', category:'Patching', kg:0.30},
+    {id:'t47-tl25f',  name:'TourLine 25F',desc:'25-pin female · Shell 32',w:68,color:'#991100', category:'Patching', kg:0.30},
+    {id:'t47-tl37m',  name:'TourLine 37M',desc:'37-pin male · Shell 32', w:70, color:'#CC3300', category:'Patching', kg:0.32},
+    {id:'t47-tl37f',  name:'TourLine 37F',desc:'37-pin female · Shell 32',w:70,color:'#991100', category:'Patching', kg:0.32},
+  ]},
+};
+// flat lookup
+const CP_ALL={};
+Object.values(CONNECTOR_DATA).forEach(b=>b.connectors.forEach(c=>CP_ALL[c.id]=c));
+
+const CP_ROW_MM=400; // usable panel width per row in mm
+let cpMix={}; // connectorId -> count
+
+function cpSetTab(tab){
+  document.getElementById('cpPane').style.display=tab==='panel'?'flex':'none';
+  document.getElementById('cgPane').style.display=tab==='generic'?'':'none';
+  const on='border:none;border-bottom:2px solid var(--green);border-radius:0;padding:10px 14px;font-weight:600;color:var(--green);font-size:11px;background:transparent';
+  const off='border:none;border-bottom:2px solid transparent;border-radius:0;padding:10px 14px;font-weight:600;color:var(--text3);font-size:11px;background:transparent';
+  document.getElementById('cpTab').style.cssText=tab==='panel'?on:off;
+  document.getElementById('cgTab').style.cssText=tab==='generic'?on:off;
+}
+
+function openCEM(){
+  cpMix={};
+  cpRenderPalette();
+  cpRenderPanel();
+  document.getElementById('cpName').value='';
+  document.getElementById('cpStatus').textContent='';
+  cpSetTab('panel');
+  document.getElementById('cem').style.display='flex';
+}
+
+function cpRenderPalette(){
+  const el=document.getElementById('cpPalette'); el.innerHTML='';
+  Object.entries(CONNECTOR_DATA).forEach(([brand,bd])=>{
+    const sec=document.createElement('div');
+    sec.style.cssText='margin-bottom:10px';
+    sec.innerHTML=`<div style="font-size:9px;font-weight:700;color:${bd.color};text-transform:uppercase;letter-spacing:.8px;padding:5px 4px 4px;border-bottom:1px solid var(--border);margin-bottom:4px">${brand}</div>`;
+    bd.connectors.forEach(c=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:5px;padding:3px 2px;border-radius:4px';
+      row.innerHTML=`
+        <div style="width:10px;height:28px;border-radius:2px;flex-shrink:0;background:${c.color}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:10px;font-weight:600">${c.name}</div>
+          <div style="font-size:8px;color:var(--text3)">${c.desc} · ${c.w}mm</div>
+        </div>
+        <button data-id="${c.id}" data-op="minus" style="width:22px;height:22px;padding:0;font-size:14px;line-height:1;flex-shrink:0">−</button>
+        <span id="cpq-${c.id}" style="font-size:11px;font-weight:700;width:18px;text-align:center;flex-shrink:0">${cpMix[c.id]||0}</span>
+        <button data-id="${c.id}" data-op="plus"  style="width:22px;height:22px;padding:0;font-size:14px;line-height:1;flex-shrink:0">+</button>`;
+      row.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+        const id=b.dataset.id;
+        if(b.dataset.op==='plus') cpMix[id]=(cpMix[id]||0)+1;
+        else cpMix[id]=Math.max(0,(cpMix[id]||0)-1);
+        if(!cpMix[id])delete cpMix[id];
+        const qEl=document.getElementById('cpq-'+id);
+        if(qEl)qEl.textContent=cpMix[id]||0;
+        cpRenderPanel();
+      });
+      sec.appendChild(row);
+    });
+    el.appendChild(sec);
+  });
+}
+
+function cpCalcRows(){
+  // Expand mix into flat list of connector objects
+  const flat=[];
+  Object.entries(cpMix).forEach(([id,count])=>{
+    const c=CP_ALL[id]; if(!c)return;
+    for(let i=0;i<count;i++)flat.push(c);
+  });
+  // Pack into rows
+  const rows=[[]]; let rowW=0;
+  flat.forEach(c=>{
+    if(rowW+c.w>CP_ROW_MM&&rows[rows.length-1].length>0){rows.push([]);rowW=0;}
+    rows[rows.length-1].push(c); rowW+=c.w;
+  });
+  return rows.filter(r=>r.length>0);
+}
+
+function cpSVGConnector(c,x,y,pw,ph){
+  const cx=x+pw/2, cy=y+ph/2;
+  const sz=Math.min(pw,ph);
+  // panel plate background
+  let s=`<rect x="${x+.5}" y="${y+2}" width="${pw-1}" height="${ph-4}" rx="2" fill="#e4e4e4" stroke="#bbb" stroke-width=".6"/>`;
+
+  if(['n-xlr3f','n-xlr5f'].includes(c.id)){
+    // Female XLR: see socket holes (dark) in delta/penta arrangement
+    const pins=c.id==='n-xlr5f'?5:3;
+    const r=Math.min(sz*.38,ph*.38);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+2}" fill="#9a9a9a" stroke="#777" stroke-width=".8"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#d0d0d0"/>`;
+    // key notch (female has slot at top)
+    s+=`<rect x="${cx-r*.12}" y="${cy-r-1.5}" width="${r*.24}" height="${r*.28}" rx="${r*.05}" fill="#555"/>`;
+    const pr=Math.max(1.5,r*.12);
+    if(pins===3){
+      [[0,-r*.38],[-r*.33,r*.22],[r*.33,r*.22]].forEach(([dx,dy])=>{
+        s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr+.8}" fill="#444"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${pr}" fill="#111"/>`;
+      });
+    } else {
+      for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.40*Math.cos(a)}" cy="${cy+r*.40*Math.sin(a)}" r="${pr+.6}" fill="#444"/><circle cx="${cx+r*.40*Math.cos(a)}" cy="${cy+r*.40*Math.sin(a)}" r="${pr}" fill="#111"/>`;}
+    }
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.16}" fill="none" stroke="#bbb" stroke-width=".4"/>`;
+  }
+  else if(['n-xlr3m','n-xlr5m'].includes(c.id)){
+    // Male XLR: see pins (silver cylinders) projecting, key at top
+    const pins=c.id==='n-xlr5m'?5:3;
+    const r=Math.min(sz*.38,ph*.38);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+2}" fill="#888" stroke="#666" stroke-width=".8"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#b8b8b8"/>`;
+    // key at top (male has raised key)
+    s+=`<rect x="${cx-r*.12}" y="${cy-r-1.5}" width="${r*.24}" height="${r*.30}" rx="${r*.05}" fill="#777"/>`;
+    s+=`<rect x="${cx-r*.08}" y="${cy-r-1}" width="${r*.16}" height="${r*.22}" rx="${r*.04}" fill="#999"/>`;
+    const pr=Math.max(1.4,r*.11);
+    if(pins===3){
+      [[0,-r*.38],[-r*.33,r*.22],[r*.33,r*.22]].forEach(([dx,dy])=>{
+        s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr+.8}" fill="#666"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${pr}" fill="#ccc"/>`;
+        s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr*.4}" fill="#e8e8e8"/>`;
+      });
+    } else {
+      for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.40*Math.cos(a)}" cy="${cy+r*.40*Math.sin(a)}" r="${pr+.7}" fill="#666"/><circle cx="${cx+r*.40*Math.cos(a)}" cy="${cy+r*.40*Math.sin(a)}" r="${pr}" fill="#ccc"/><circle cx="${cx+r*.40*Math.cos(a)}" cy="${cy+r*.40*Math.sin(a)}" r="${pr*.38}" fill="#e8e8e8"/>`;}
+    }
+  }
+  else if(c.id==='n-ts'){
+    // TS mono jack — same bushing as TRS but single-contact bore
+    const r=Math.min(sz*.34,ph*.34);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#b0b0b0" stroke="#888" stroke-width=".7"/>`;
+    for(let a=0;a<6;a++){const ang=a*60*Math.PI/180;s+=`<line x1="${cx+(r-1.5)*Math.cos(ang)}" y1="${cy+(r-1.5)*Math.sin(ang)}" x2="${cx+r*Math.cos(ang)}" y2="${cy+r*Math.sin(ang)}" stroke="#ccc" stroke-width=".6"/>`;}
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.65}" fill="#c0c0c0"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.40}" fill="#1a1a1a" stroke="#444" stroke-width=".5"/>`;
+    // single contact (no ring band unlike TRS)
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.14}" fill="#555"/>`;
+  }
+  else if(c.id==='n-trs'){
+    const r=sz*.34;
+    // hex nut outer ring
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#b0b0b0" stroke="#888" stroke-width=".7"/>`;
+    // thread marks (hexagonal)
+    for(let a=0;a<6;a++){
+      const ang=a*60*Math.PI/180;
+      s+=`<line x1="${cx+(r-1.5)*Math.cos(ang)}" y1="${cy+(r-1.5)*Math.sin(ang)}" x2="${cx+r*Math.cos(ang)}" y2="${cy+r*Math.sin(ang)}" stroke="#ccc" stroke-width=".6"/>`;
+    }
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.65}" fill="#c8c8c8"/>`;
+    // jack bore
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.42}" fill="#1a1a1a" stroke="#444" stroke-width=".5"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.18}" fill="#333"/>`;
+  }
+  else if(c.id==='n-eth'){
+    const bw=pw*.72, bh=ph*.58, bx=cx-bw/2, by=cy-bh/2;
+    s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="2.5" fill="#777" stroke="#555" stroke-width=".7"/>`;
+    const pw2=bw*.78, ph2=bh*.68, px2=cx-pw2/2, py2=by+bh*.1;
+    s+=`<rect x="${px2}" y="${py2}" width="${pw2}" height="${ph2}" rx="1" fill="#1a1a1a"/>`;
+    // 8 gold pins
+    const pinW=Math.max(.8,pw2/12), gap=pw2/9;
+    for(let i=0;i<8;i++)s+=`<rect x="${px2+pw2*.06+i*gap}" y="${py2+1}" width="${pinW}" height="${ph2*.42}" rx=".3" fill="#c8a020"/>`;
+    // latch tab
+    s+=`<rect x="${cx-pw2/2}" y="${by+bh*.82}" width="${pw2}" height="${bh*.12}" rx="1" fill="#999"/>`;
+    // LED dots
+    s+=`<circle cx="${bx+bw*.12}" cy="${cy+bh*.22}" r="1.2" fill="#22c55e"/>`;
+    s+=`<circle cx="${bx+bw*.88}" cy="${cy+bh*.22}" r="1.2" fill="#f59e0b"/>`;
+  }
+  else if(['n-spk2','n-spk4','n-spk8'].includes(c.id)){
+    // speakON: round bayonet body, contacts in cross/ring layout
+    const poles={'n-spk2':2,'n-spk4':4,'n-spk8':8}[c.id];
+    const r=Math.min(sz*.40,ph*.40);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+1.5}" fill="#1a1a1a" stroke="#444" stroke-width="1.2"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#222"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.84}" fill="#2d2d2d"/>`;
+    // twist-lock ridges (3 bayonet tabs on outer ring)
+    for(let i=0;i<3;i++){const a=(i/3)*Math.PI*2+Math.PI/6;s+=`<path d="M${cx+r*Math.cos(a)} ${cy+r*Math.sin(a)} A${r+1.5} ${r+1.5} 0 0 1 ${cx+(r+1.5)*Math.cos(a+.4)} ${cy+(r+1.5)*Math.sin(a+.4)}" stroke="#555" stroke-width="2" fill="none"/>`;}
+    const cr=Math.max(1.3,Math.min(2.5,r*.15));
+    if(poles===2){
+      [[0,-r*.46],[0,r*.46]].forEach(([dx,dy])=>{
+        s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${cr+.7}" fill="#777"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${cr}" fill="#c8a020"/>`;
+      });
+      // centre key slot
+      s+=`<rect x="${cx-r*.07}" y="${cy-r*.52}" width="${r*.14}" height="${r*.20}" rx="${r*.03}" fill="#555"/>`;
+      s+=`<rect x="${cx-r*.07}" y="${cy+r*.32}" width="${r*.14}" height="${r*.20}" rx="${r*.03}" fill="#555"/>`;
+    } else if(poles===4){
+      [[0,-r*.46],[r*.46,0],[0,r*.46],[-r*.46,0]].forEach(([dx,dy])=>{
+        s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${cr+.7}" fill="#777"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${cr}" fill="#c8a020"/>`;
+      });
+      s+=`<rect x="${cx-r*.08}" y="${cy-r*.52}" width="${r*.16}" height="${r*1.04}" rx="${r*.04}" fill="#3a3a3a"/>`;
+      s+=`<rect x="${cx-r*.52}" y="${cy-r*.08}" width="${r*1.04}" height="${r*.16}" rx="${r*.04}" fill="#3a3a3a"/>`;
+      s+=`<circle cx="${cx}" cy="${cy}" r="${r*.18}" fill="#333" stroke="#555" stroke-width=".4"/>`;
+    } else {
+      // 8-pole: 8 contacts in a circle
+      for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.56*Math.cos(a)}" cy="${cy+r*.56*Math.sin(a)}" r="${cr*.85+.5}" fill="#777"/><circle cx="${cx+r*.56*Math.cos(a)}" cy="${cy+r*.56*Math.sin(a)}" r="${cr*.85}" fill="#c8a020"/>`;}
+      s+=`<circle cx="${cx}" cy="${cy}" r="${r*.22}" fill="#333" stroke="#555" stroke-width=".5"/>`;
+    }
+  }
+  else if(['n-pwr-f','n-pwr-m'].includes(c.id)){
+    // powerCON TRUE1: keyed rectangular/oval twist-lock housing
+    const isFemale=c.id==='n-pwr-f';
+    const bodyColor=isFemale?'#1B5E20':'#2E7D32';
+    const bw=pw*.84, bh=ph*.72, bx=cx-bw/2, by=cy-bh/2;
+    // outer housing with rounded rect
+    s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="5" fill="${bodyColor}" stroke="#1a3a1a" stroke-width="1"/>`;
+    s+=`<rect x="${bx+2}" y="${by+2}" width="${bw-4}" height="${bh-4}" rx="4" fill="none" stroke="rgba(255,255,255,.12)" stroke-width=".7"/>`;
+    // key cut at top (flat notch)
+    s+=`<rect x="${cx-bw*.25}" y="${by-1}" width="${bw*.5}" height="${bh*.18}" rx="2" fill="#e4e4e4"/>`;
+    // TRUE1 label (small)
+    if(bw>30)s+=`<text x="${cx}" y="${by+bh*.25}" text-anchor="middle" fill="rgba(255,255,255,.45)" font-size="${Math.min(5,bw*.11)}" font-family="Arial" font-weight="bold">TRUE1</text>`;
+    // 3 contacts in triangle (L, N, PE)
+    const pr=Math.max(1.8,Math.min(bw/8,bh*.13));
+    [[-bw*.24,bh*.10],[bw*.24,bh*.10],[0,bh*.30]].forEach(([dx,dy])=>{
+      if(isFemale){
+        s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr+.7}" fill="#0a1a0a"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${pr}" fill="#061006"/>`;
+      } else {
+        s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr+.7}" fill="#1a1a1a"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${pr}" fill="#c8c8c8"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${pr*.35}" fill="#e8e8e8"/>`;
+      }
+    });
+    // direction arrow
+    const arrow=isFemale?'▼':'▲';
+    if(bw>32)s+=`<text x="${cx}" y="${by+bh*.94}" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="6" font-family="Arial">${arrow}</text>`;
+  }
+  else if(c.id==='n-opt'){
+    const bw=pw*.84, bh=ph*.74, bx=cx-bw/2, by=cy-bh/2;
+    s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="2" fill="#111" stroke="#333" stroke-width=".8"/>`;
+    const pr=Math.max(2,Math.min(bw/6,bh*.28));
+    [[-bw*.22,0],[bw*.22,0]].forEach(([dx,dy])=>{
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr+1}" fill="#222" stroke="#444" stroke-width=".5"/>`;
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr}" fill="#1a0a2e"/>`;
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr*.55}" fill="#7C3AED"/>`;
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr*.22}" fill="#ddd6fe"/>`;
+    });
+    // dust shutters
+    s+=`<rect x="${cx-bw*.35}" y="${by+bh*.78}" width="${bw*.7}" height="${bh*.14}" rx="1" fill="#333"/>`;
+  }
+  else if(c.id==='n-tru'){
+    const bw=pw*.84, bh=ph*.74, bx=cx-bw/2, by=cy-bh/2;
+    s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="2" fill="#2d1b69" stroke="#4c1d95" stroke-width=".8"/>`;
+    const pr=Math.max(2,Math.min(bw/6,bh*.26));
+    // centre fibre port
+    s+=`<circle cx="${cx}" cy="${cy}" r="${pr+1}" fill="#1a0a3a" stroke="#4c1d95" stroke-width=".5"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${pr}" fill="#1a0a3a"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${pr*.55}" fill="#7C3AED"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${pr*.22}" fill="#ddd6fe"/>`;
+    // 2 electrical contacts
+    const er=pr*.7;
+    [[-bw*.3,0],[bw*.3,0]].forEach(([dx,dy])=>{
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${er+.6}" fill="#1a0a3a" stroke="#4c1d95" stroke-width=".4"/>`;
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${er}" fill="#0f0620"/>`;
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${er*.38}" fill="#c8a020"/>`;
+    });
+  }
+  else if(['la-lk13','la-lk19','la-lk25','la-lk37','la-lk54'].includes(c.id)){
+    const pinMap={'la-lk13':13,'la-lk19':19,'la-lk25':25,'la-lk37':37,'la-lk54':54};
+    const total=pinMap[c.id]||19;
+    const r=Math.min(sz*.42,ph*.4);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+2}" fill="#1a3a5c" stroke="#0066CC" stroke-width="1.2"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#0d2744"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.88}" fill="#091d38"/>`;
+    const pr=Math.max(.8,Math.min(2.0,r*.10));
+    // distribute pins across up to 3 rings
+    const ring3=total>30?Math.ceil(total*.18):0;
+    const ring2=total>13?Math.ceil((total-ring3)*.38):0;
+    const ring1=total-ring2-ring3;
+    [[ring1,r*.70],[ring2,r*.46],[ring3,r*.24]].forEach(([cnt,rr])=>{
+      if(cnt<=0)return;
+      for(let i=0;i<cnt;i++){
+        const a=(i/cnt)*Math.PI*2-Math.PI/2;
+        s+=`<circle cx="${cx+rr*Math.cos(a)}" cy="${cy+rr*Math.sin(a)}" r="${pr}" fill="#c8c8c8"/>`;
+      }
+    });
+    if(total===13||total===19)s+=`<circle cx="${cx}" cy="${cy}" r="${pr}" fill="#c8c8c8"/>`;
+    // keyway notch at top
+    s+=`<rect x="${cx-r*.09}" y="${cy-r+1}" width="${r*.18}" height="${r*.22}" rx="${r*.04}" fill="#0066CC"/>`;
+  }
+  else if(['la-pl-b','la-pl-r','la-pl-bk'].includes(c.id)){
+    // PowerLink single-pole: round body with central contact pin
+    const bodyColor={'la-pl-b':'#1565C0','la-pl-r':'#B71C1C','la-pl-bk':'#2a2a2a'}[c.id];
+    const r=Math.min(sz*.42,ph*.4);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+2}" fill="${bodyColor}" stroke="#111" stroke-width="1"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${bodyColor}"/>`;
+    // polarising key (flat cut at top)
+    s+=`<rect x="${cx-r*.6}" y="${cy-r-2}" width="${r*1.2}" height="${r*.35}" rx="1" fill="#e4e4e4"/>`;
+    // central pin housing
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.52}" fill="#333" stroke="#555" stroke-width=".6"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.32}" fill="#c8a020"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.14}" fill="#e8c040"/>`;
+    // colour band label
+    const lbl={'la-pl-b':'BLUE','la-pl-r':'RED','la-pl-bk':'BLK'}[c.id];
+    if(pw>26)s+=`<text x="${cx}" y="${cy+r+10}" text-anchor="middle" fill="${bodyColor}" font-size="5" font-family="Arial" font-weight="bold">${lbl}</text>`;
+  }
+  else if(['t47-pc8m','t47-pc8f','t47-pc19m','t47-pc19f'].includes(c.id)){
+    // Ten47 PA-COM: MIL-C-5015 circular, red body, male=pins female=sockets
+    const isMale=c.id.endsWith('m');
+    const pinCount={'t47-pc8m':8,'t47-pc8f':8,'t47-pc19m':19,'t47-pc19f':19}[c.id];
+    const r=Math.min(sz*.42,ph*.4);
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+2}" fill="#7a0000" stroke="#550000" stroke-width="1.2"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#8B0000"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.86}" fill="#6d0000"/>`;
+    // keyway at top
+    s+=`<rect x="${cx-r*.10}" y="${cy-r+1}" width="${r*.20}" height="${r*.24}" rx="${r*.05}" fill="#CC0000"/>`;
+    const pr=Math.max(.9,Math.min(2.0,r*.12));
+    if(pinCount===8){
+      // 8: 6 outer + 2 inner
+      for(let i=0;i<6;i++){
+        const a=(i/6)*Math.PI*2-Math.PI/2;
+        s+=`<circle cx="${cx+r*.66*Math.cos(a)}" cy="${cy+r*.66*Math.sin(a)}" r="${pr}" fill="${isMale?'#c8a020':'#888'}"/>`;
+      }
+      for(let i=0;i<2;i++){
+        const a=(i/2)*Math.PI*2;
+        s+=`<circle cx="${cx+r*.32*Math.cos(a)}" cy="${cy+r*.32*Math.sin(a)}" r="${pr}" fill="${isMale?'#c8a020':'#888'}"/>`;
+      }
+    } else {
+      // 19: 12 outer + 6 middle + 1 centre
+      for(let i=0;i<12;i++){const a=(i/12)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.70*Math.cos(a)}" cy="${cy+r*.70*Math.sin(a)}" r="${pr*.85}" fill="${isMale?'#c8a020':'#888'}"  />`;}
+      for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.43*Math.cos(a)}" cy="${cy+r*.43*Math.sin(a)}" r="${pr*.85}" fill="${isMale?'#c8a020':'#888'}"/>`;}
+      s+=`<circle cx="${cx}" cy="${cy}" r="${pr*.85}" fill="${isMale?'#c8a020':'#888'}"/>`;
+    }
+    if(pw>30)s+=`<text x="${cx}" y="${cy+r+10}" text-anchor="middle" fill="#CC0000" font-size="5" font-family="Arial" font-weight="bold">PA-COM ${isMale?'M':'F'}</text>`;
+  }
+  else if(['t47-tl25m','t47-tl25f','t47-tl37m','t47-tl37f'].includes(c.id)){
+    // Ten47 TourLine: large Shell 32 circular, heavy-duty flange
+    const isMale=c.id.endsWith('m');
+    const pinCount={'t47-tl25m':25,'t47-tl25f':25,'t47-tl37m':37,'t47-tl37f':37}[c.id];
+    const r=Math.min(sz*.43,ph*.42);
+    // outer flange (locking ring)
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+3}" fill="#5a0000" stroke="#3d0000" stroke-width="1.5"/>`;
+    // locking lugs (3 tabs)
+    for(let i=0;i<3;i++){
+      const a=(i/3)*Math.PI*2+Math.PI/6;
+      s+=`<circle cx="${cx+(r+3)*Math.cos(a)}" cy="${cy+(r+3)*Math.sin(a)}" r="${r*.14}" fill="#3d0000" stroke="#2a0000" stroke-width=".6"/>`;
+    }
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="#7a0000"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.84}" fill="#5d0000"/>`;
+    // keyway
+    s+=`<rect x="${cx-r*.10}" y="${cy-r+1}" width="${r*.20}" height="${r*.26}" rx="${r*.05}" fill="#CC3300"/>`;
+    const pr=Math.max(.7,Math.min(1.7,r*.085));
+    if(pinCount===25){
+      // 25: 15 outer + 9 inner + 1 centre
+      for(let i=0;i<15;i++){const a=(i/15)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.70*Math.cos(a)}" cy="${cy+r*.70*Math.sin(a)}" r="${pr}" fill="${isMale?'#e0b830':'#9a9a9a'}"/>`;}
+      for(let i=0;i<9;i++){const a=(i/9)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.44*Math.cos(a)}" cy="${cy+r*.44*Math.sin(a)}" r="${pr}" fill="${isMale?'#e0b830':'#9a9a9a'}"/>`;}
+      s+=`<circle cx="${cx}" cy="${cy}" r="${pr}" fill="${isMale?'#e0b830':'#9a9a9a'}"/>`;
+    } else {
+      // 37: 18 outer + 12 middle + 6 inner + 1 centre
+      for(let i=0;i<18;i++){const a=(i/18)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.72*Math.cos(a)}" cy="${cy+r*.72*Math.sin(a)}" r="${pr*.9}" fill="${isMale?'#e0b830':'#9a9a9a'}"/>`;}
+      for(let i=0;i<12;i++){const a=(i/12)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.50*Math.cos(a)}" cy="${cy+r*.50*Math.sin(a)}" r="${pr*.9}" fill="${isMale?'#e0b830':'#9a9a9a'}"/>`;}
+      for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/2;s+=`<circle cx="${cx+r*.28*Math.cos(a)}" cy="${cy+r*.28*Math.sin(a)}" r="${pr*.9}" fill="${isMale?'#e0b830':'#9a9a9a'}"/>`;}
+      s+=`<circle cx="${cx}" cy="${cy}" r="${pr*.9}" fill="${isMale?'#e0b830':'#9a9a9a'}"/>`;
+    }
+    if(pw>44)s+=`<text x="${cx}" y="${cy+r+11}" text-anchor="middle" fill="#CC3300" font-size="5" font-family="Arial" font-weight="bold">TourLine ${isMale?'M':'F'}</text>`;
+  }
+  else if(c.id==='bals-schuko'){
+    // Schuko: round socket, 2 round holes + PE clip contacts top/bottom
+    const bw=pw*.82, bh=ph*.82, bx=cx-bw/2, by=cy-bh/2;
+    s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="4" fill="#616161" stroke="#424242" stroke-width=".8"/>`;
+    s+=`<rect x="${bx+2}" y="${by+2}" width="${bw-4}" height="${bh-4}" rx="3" fill="none" stroke="rgba(255,255,255,.1)" stroke-width=".5"/>`;
+    // round socket face
+    const sr=Math.min(bw,bh)*.38;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${sr}" fill="#424242" stroke="#333" stroke-width=".7"/>`;
+    // 2 pin holes (line + neutral)
+    const pr=Math.max(1.6,sr*.14);
+    [[-sr*.38,0],[sr*.38,0]].forEach(([dx,dy])=>{
+      s+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${pr+.6}" fill="#222"/><circle cx="${cx+dx}" cy="${cy+dy}" r="${pr}" fill="#111"/>`;
+    });
+    // PE grounding clips (top + bottom of socket ring)
+    s+=`<rect x="${cx-sr*.1}" y="${cy-sr-.5}" width="${sr*.2}" height="${sr*.22}" rx="1" fill="#555"/>`;
+    s+=`<rect x="${cx-sr*.1}" y="${cy+sr*.78}" width="${sr*.2}" height="${sr*.22}" rx="1" fill="#555"/>`;
+    if(pw>38)s+=`<text x="${cx}" y="${by+bh+8}" text-anchor="middle" fill="#757575" font-size="5" font-family="Arial" font-weight="bold">SCHUKO</text>`;
+  }
+  else if(c.id.startsWith('bals-cee')||c.id.startsWith('bals-ev')){
+    // CEE / Event: coloured round body with contact pins in circular arrangement
+    const isCEE=c.id.startsWith('bals-cee');
+    const isRed=c.color.startsWith('#C')||c.color.startsWith('#B')||c.color.startsWith('#7F');
+    const poles=c.id.includes('-3')?3:c.id.includes('-4')?4:5;
+    const is63A=c.id.includes('63');
+    const bodyColor=isRed?'#C62828':(c.id.includes('ev')?'#1565C0':c.color);
+    const r=Math.min(pw*.44,ph*.42);
+    // outer protective ring / shroud
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r+2}" fill="${bodyColor}" stroke="${isRed?'#7F0000':'#0D47A1'}" stroke-width="1"/>`;
+    // inner face
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${bodyColor}"/>`;
+    s+=`<circle cx="${cx}" cy="${cy}" r="${r*.86}" fill="${isRed?'#b71c1c':isCEE?'#1565C0':'#1976D2'}"/>`;
+    // keyway notch at top
+    s+=`<rect x="${cx-r*.11}" y="${cy-r+.5}" width="${r*.22}" height="${r*.26}" rx="${r*.05}" fill="${isRed?'#7F0000':'#0D47A1'}"/>`;
+    // contacts arranged in circle
+    const cr=Math.max(1.4,Math.min(2.8,r*.13));
+    const contactR=r*.58;
+    const startAngle=-Math.PI/2; // top = PE/ground
+    for(let i=0;i<poles;i++){
+      const a=startAngle+(i/poles)*Math.PI*2;
+      s+=`<circle cx="${cx+contactR*Math.cos(a)}" cy="${cy+contactR*Math.sin(a)}" r="${cr+.6}" fill="${isRed?'#5a0000':'#003070'}"/>`;
+      s+=`<circle cx="${cx+contactR*Math.cos(a)}" cy="${cy+contactR*Math.sin(a)}" r="${cr}" fill="#e0e0e0"/>`;
+    }
+    // current + voltage label
+    const amp=c.desc.match(/(\d+)A/)?.[1]||'';
+    const volt=c.desc.match(/(\d{3})V/)?.[1]||'';
+    if(pw>50){
+      s+=`<text x="${cx}" y="${cy-r*.18}" text-anchor="middle" fill="rgba(255,255,255,.7)" font-size="${Math.min(6,r*.22)}" font-family="Arial" font-weight="bold">${amp}A</text>`;
+      s+=`<text x="${cx}" y="${cy+r*.25}" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="${Math.min(5,r*.18)}" font-family="Arial">${volt}V</text>`;
+    }
+    // IEC reference mark (coloured wedge) for 63A
+    if(is63A)s+=`<circle cx="${cx}" cy="${cy}" r="${r*.18}" fill="${isRed?'#7F0000':'#0D47A1'}" stroke="rgba(255,255,255,.2)" stroke-width=".5"/>`;
+  }
+  else{
+    // fallback
+    s+=`<rect x="${x+2}" y="${y+3}" width="${pw-4}" height="${ph-6}" rx="2" fill="${c.color}" opacity=".8"/>`;
+    if(pw>16)s+=`<text x="${cx}" y="${cy+3}" text-anchor="middle" fill="#fff" font-size="${Math.min(7,pw/4)}" font-family="Arial" font-weight="bold">${c.name.substring(0,4)}</text>`;
+  }
+  return s;
+}
+
+function cpRenderPanel(){
+  const rows=cpCalcRows();
+  const totalCount=Object.values(cpMix).reduce((s,v)=>s+v,0);
+  const uSize=Math.max(1,rows.length);
+  const totalKg=Object.entries(cpMix).reduce((s,[id,n])=>{const c=CP_ALL[id];return s+(c?c.kg*n:0);},0);
+  const rk=rack(), available=rk?rk.uCount-uUsed(rk):0;
+  const prev=document.getElementById('cpPreview');
+
+  if(!totalCount){
+    prev.innerHTML='<div style="font-size:10px;color:var(--text3);padding:20px 0">Add connectors from the left →</div>';
+    document.getElementById('cpStats').innerHTML='';
+    document.getElementById('cpAdd').disabled=true;
+    document.getElementById('cpStatus').textContent='';
+    return;
+  }
+
+  // SVG panel
+  const SVG_W=440, ROW_H=44, MARGIN=4;
+  let svg=`<svg width="${SVG_W}" height="${uSize*ROW_H+MARGIN*2}" xmlns="http://www.w3.org/2000/svg" style="display:block;border-radius:4px;border:1.5px solid #aaa;background:#f9f9f9">`;
+  // Rack ears
+  svg+=`<rect x="0" y="${MARGIN}" width="14" height="${uSize*ROW_H}" fill="#ccc" stroke="#aaa" stroke-width="1"/>`;
+  svg+=`<rect x="${SVG_W-14}" y="${MARGIN}" width="14" height="${uSize*ROW_H}" fill="#ccc" stroke="#aaa" stroke-width="1"/>`;
+  for(let r=0;r<uSize;r++){
+    const ry=MARGIN+r*ROW_H;
+    svg+=`<line x1="14" y1="${ry}" x2="${SVG_W-14}" y2="${ry}" stroke="#e8e8e8" stroke-width="1"/>`;
+    // screw holes
+    [7,SVG_W-7].forEach(sx=>{svg+=`<circle cx="${sx}" cy="${ry+ROW_H/2}" r="4" fill="#fff" stroke="#999" stroke-width=".8"/>`;});
+  }
+  // Connectors
+  const scale=(SVG_W-28)/CP_ROW_MM;
+  rows.forEach((row,ri)=>{
+    let x=14;
+    const ry=MARGIN+ri*ROW_H;
+    row.forEach(c=>{
+      const cw=c.w*scale;
+      svg+=cpSVGConnector(c,x,ry,cw,ROW_H);
+      x+=cw;
+    });
+    const remW=(SVG_W-14)-x;
+    if(remW>2)svg+=`<rect x="${x}" y="${ry+3}" width="${remW}" height="${ROW_H-6}" rx="2" fill="#ececec" stroke="#ddd" stroke-width=".5"/>`;
+  });
+  svg+=`</svg>`;
+  prev.innerHTML=svg;
+
+  // Stats
+  const overLimit=uSize>available;
+  document.getElementById('cpStats').innerHTML=
+    `<span><b>${totalCount}</b> connectors</span>`+
+    `<span><b>${uSize}U</b> panel</span>`+
+    `<span><b>~${totalKg.toFixed(1)}kg</b></span>`+
+    `<span style="color:${overLimit?'var(--red)':'var(--green)'}">${overLimit?`⚠ needs ${uSize}U, only ${available}U free`:`✓ ${available}U free in rack`}</span>`;
+
+  // Auto name
+  const parts=Object.entries(cpMix).map(([id,n])=>`${n}×${CP_ALL[id]?.name||id}`);
+  if(!document.getElementById('cpName').value||document.getElementById('cpName').dataset.auto==='1'){
+    document.getElementById('cpName').value=parts.join(' + ');
+    document.getElementById('cpName').dataset.auto='1';
+  }
+  document.getElementById('cpAdd').disabled=overLimit;
+  document.getElementById('cpStatus').textContent='';
+}
+
+function cpClear(){
+  cpMix={};
+  document.querySelectorAll('[id^="cpq-"]').forEach(el=>el.textContent='0');
+  cpRenderPanel();
+  document.getElementById('cpName').value='';
+}
+
+function cpAddPanel(){
+  if(!Object.keys(cpMix).length)return;
+  const rows=cpCalcRows();
+  const uSize=Math.max(1,rows.length);
+  const totalKg=parseFloat(Object.entries(cpMix).reduce((s,[id,n])=>{const c=CP_ALL[id];return s+(c?c.kg*n:0);},0).toFixed(1));
+  const name=document.getElementById('cpName').value.trim()||'Custom Panel';
+  const desc=Object.entries(cpMix).map(([id,n])=>`${n}× ${CP_ALL[id]?.name||id}`).join(', ');
+  // category: use most common category in mix
+  const cats={}; Object.entries(cpMix).forEach(([id,n])=>{const cat=CP_ALL[id]?.category||'Patching';cats[cat]=(cats[cat]||0)+n;});
+  const category=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0][0];
+  cEq.push({id:'cp'+Date.now(),brand:'Custom',name,category,uSize,desc,kg:totalKg,w:0,brandColor:'#16a34a'});
+  document.getElementById('cem').style.display='none';
+  document.getElementById('cpName').dataset.auto='';
+  rEqList(); rBrands();
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 async function openSettings(){
   const settings=await window.circuit.getSettings();
@@ -633,8 +1189,9 @@ if(window.circuit){
 
 // ─── Wire up events ────────────────────────────────────────────────────────────
 document.getElementById("srch").oninput=e=>{fSr=e.target.value;rEqList();};
+document.getElementById("cpName").oninput=()=>document.getElementById("cpName").dataset.auto='';
 document.getElementById("bPDF").onclick=exportPDF;
-document.getElementById("oCE").onclick=()=>document.getElementById("cem").style.display="flex";
+document.getElementById("oCE").onclick=openCEM;
 document.getElementById("cce").onclick=()=>document.getElementById("cem").style.display="none";
 document.getElementById("bSt").onclick=openSettings;
 document.getElementById("bSv").onclick=saveProject;
