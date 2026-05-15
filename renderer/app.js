@@ -511,10 +511,32 @@ async function claudeAsk(){
   status.textContent="Asking Claude…";status.style.color="var(--text3)";
   document.getElementById("ai-btn").disabled=true;
 
-  const systemPrompt=`You are the CIRCUIT equipment assistant for Circle Pro Audio.
-When the user asks you to add or look up audio/video equipment, return ONLY a JSON array of device objects (no markdown, no explanation).
-Each object must have: id (string, unique), brand (string), name (string), category (one of: Patching/Wireless/Amplifier/Processing/Network/Power/Accessory), uSize (1, 2, or 3), desc (short string), kg (number), w (number for power watts).
-If the user asks something else (not adding equipment), return: {"message": "your helpful response here"}`;
+  const systemPrompt=`You are the CIRCUIT equipment assistant for Circle Pro Audio. You have expert knowledge of professional audio/video rack equipment dimensions and specifications.
+
+When asked to add or look up equipment, return ONLY a valid JSON array of device objects — no markdown, no explanation, no code fences.
+
+Each object must have exactly these fields:
+- id: lowercase-hyphenated unique string (e.g. "shure-ad4d", "lab-fp6400")
+- brand: exact manufacturer name (e.g. "Shure", "Sennheiser", "Lab.gruppen", "d&b audiotechnik")
+- name: exact product model name
+- category: one of exactly: Patching | Wireless | Amplifier | Processing | Network | Power | Accessory
+- uSize: rack units as an integer — use the REAL published spec:
+    • Most signal processors, preamps, interfaces = 1U
+    • Power amplifiers (small/medium) = 2U; large touring amps = 3U or 4U
+    • Wireless receiver 2-ch = 1U; 4-ch = 1U; 8-ch = 2U
+    • Patch bays, DI boxes, power conditioners = 1U
+    • Large format routers/matrices = 2U–4U
+- desc: concise spec string (e.g. "4-ch UHF true diversity, 470–636 MHz")
+- kg: real published weight in kg (decimal, e.g. 2.4) — do NOT guess; use actual spec
+- w: real published power consumption in watts (0 if passive/unpowered)
+
+IMPORTANT — dimension accuracy:
+- Never invent or approximate uSize; always use the manufacturer's published rack unit height
+- For wireless systems: a dual receiver like Shure AD4D is 1U; an 8-ch system like Shure Axient AD4Q is 1U
+- For amplifiers: Lab.gruppen FP6400 is 2U; Crown IT4x3500HD is 2U; d&b D80 is 2U
+- For processing: BSS BLU-800 is 1U; Lake LM44 is 1U; dbx DriveRack PA2 is 1U
+
+If the user asks a question (not adding equipment), return: {"message": "your helpful response here"}`;
 
   try{
     const result=await window.circuit.claudeQuery(q,systemPrompt);
@@ -599,11 +621,11 @@ const CONNECTOR_DATA={
     {id:'n-tru',   name:'TruCON',     desc:'Fibre + power hybrid',     w:34, color:'#7C3AED', category:'Patching', kg:0.10},
   ]},
   'LINK Audio':{color:'#0066CC',connectors:[
-    {id:'la-lk13', name:'LK13',        desc:'13-pin · Shell 20',  w:38, color:'#0066CC', category:'Patching', kg:0.15},
-    {id:'la-lk19', name:'LK19',        desc:'19-pin · Shell 22',  w:44, color:'#0052A5', category:'Patching', kg:0.20},
-    {id:'la-lk25', name:'LK25',        desc:'25-pin · Shell 24',  w:50, color:'#004080', category:'Patching', kg:0.22},
-    {id:'la-lk37', name:'LK37',        desc:'37-pin · Shell 28',  w:60, color:'#003D7A', category:'Patching', kg:0.28},
-    {id:'la-lk54', name:'LK54',        desc:'54-pin · Shell 32',  w:68, color:'#002952', category:'Patching', kg:0.35},
+    {id:'la-lk13', name:'LK13',        desc:'13-pin · Shell 20 · ∅38mm',  w:44, color:'#0066CC', category:'Patching', kg:0.15},
+    {id:'la-lk19', name:'LK19',        desc:'19-pin · Shell 22 · ∅52mm',  w:58, color:'#0052A5', category:'Patching', kg:0.20},
+    {id:'la-lk25', name:'LK25',        desc:'25-pin · Shell 24 · ∅57mm',  w:63, color:'#004080', category:'Patching', kg:0.22},
+    {id:'la-lk37', name:'LK37',        desc:'37-pin · Shell 28 · ∅65mm',  w:72, color:'#003D7A', category:'Patching', kg:0.28},
+    {id:'la-lk54', name:'LK54',        desc:'54-pin · Shell 32 · ∅76mm',  w:82, color:'#002952', category:'Patching', kg:0.35},
     {id:'la-pl-b', name:'PowerLink B', desc:'Single-pole Blue 16A',w:32, color:'#1565C0', category:'Power',    kg:0.10},
     {id:'la-pl-r', name:'PowerLink R', desc:'Single-pole Red 16A', w:32, color:'#B71C1C', category:'Power',    kg:0.10},
     {id:'la-pl-bk',name:'PowerLink Bk',desc:'Single-pole Black 16A',w:32,color:'#222222', category:'Power',    kg:0.10},
@@ -630,14 +652,14 @@ const CONNECTOR_DATA={
     {id:'bals-evi32-5',  name:'Event Inlet 32A',desc:'120441 · 32A 400V inlet · IP44',   w:80,  color:'#01579B', category:'Power', kg:0.32},
   ]},
   'Ten47':{color:'#CC0000',connectors:[
-    {id:'t47-pc8m',   name:'PA-COM 8M',   desc:'8-pin male · Shell 22', w:42, color:'#AA0000', category:'Patching', kg:0.18},
-    {id:'t47-pc8f',   name:'PA-COM 8F',   desc:'8-pin female · Shell 22',w:42,color:'#880000', category:'Patching', kg:0.18},
-    {id:'t47-pc19m',  name:'PA-COM 19M',  desc:'19-pin male · Shell 20',w:38, color:'#AA0000', category:'Patching', kg:0.16},
-    {id:'t47-pc19f',  name:'PA-COM 19F',  desc:'19-pin female · Shell 20',w:38,color:'#880000',category:'Patching', kg:0.16},
-    {id:'t47-tl25m',  name:'TourLine 25M',desc:'25-pin male · Shell 32', w:68, color:'#CC3300', category:'Patching', kg:0.30},
-    {id:'t47-tl25f',  name:'TourLine 25F',desc:'25-pin female · Shell 32',w:68,color:'#991100', category:'Patching', kg:0.30},
-    {id:'t47-tl37m',  name:'TourLine 37M',desc:'37-pin male · Shell 32', w:70, color:'#CC3300', category:'Patching', kg:0.32},
-    {id:'t47-tl37f',  name:'TourLine 37F',desc:'37-pin female · Shell 32',w:70,color:'#991100', category:'Patching', kg:0.32},
+    {id:'t47-pc8m',   name:'PA-COM 8M',   desc:'8-pin male · Shell 22 · ∅52mm',  w:58, color:'#AA0000', category:'Patching', kg:0.18},
+    {id:'t47-pc8f',   name:'PA-COM 8F',   desc:'8-pin female · Shell 22 · ∅52mm', w:58, color:'#880000', category:'Patching', kg:0.18},
+    {id:'t47-pc19m',  name:'PA-COM 19M',  desc:'19-pin male · Shell 20 · ∅44mm',  w:50, color:'#AA0000', category:'Patching', kg:0.16},
+    {id:'t47-pc19f',  name:'PA-COM 19F',  desc:'19-pin female · Shell 20 · ∅44mm',w:50, color:'#880000', category:'Patching', kg:0.16},
+    {id:'t47-tl25m',  name:'TourLine 25M',desc:'25-pin male · Shell 32 · ∅76mm',  w:82, color:'#CC3300', category:'Patching', kg:0.30},
+    {id:'t47-tl25f',  name:'TourLine 25F',desc:'25-pin female · Shell 32 · ∅76mm', w:82, color:'#991100', category:'Patching', kg:0.30},
+    {id:'t47-tl37m',  name:'TourLine 37M',desc:'37-pin male · Shell 32 · ∅76mm',  w:82, color:'#CC3300', category:'Patching', kg:0.32},
+    {id:'t47-tl37f',  name:'TourLine 37F',desc:'37-pin female · Shell 32 · ∅76mm', w:82, color:'#991100', category:'Patching', kg:0.32},
   ]},
 };
 // flat lookup
