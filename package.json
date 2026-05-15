@@ -1,6 +1,6 @@
 {
   "name": "circuit-proaudio",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "CIRCUIT by Circle Pro Audio – Professional Rack Design Studio",
   "main": "main.js",
   "scripts": {
