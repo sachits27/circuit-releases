@@ -525,9 +525,10 @@ If the user asks something else (not adding equipment), return: {"message": "you
       return;
     }
 
-    // Try to parse as JSON
+    // Try to parse as JSON (strip markdown code fences if present)
     try{
-      const parsed=JSON.parse(result.text);
+      const clean=result.text.replace(/^```(?:json)?\s*/i,'').replace(/```\s*$/,'').trim();
+      const parsed=JSON.parse(clean);
       // Check if it's a message (not a device array)
       if(parsed.message){
         status.textContent="Claude: "+parsed.message.substring(0,120);
