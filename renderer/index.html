@@ -241,6 +241,11 @@
           Stored securely on this device, never sent anywhere except Anthropic.
         </div>
         <div class="settings-row">
+          <label>Ask Claude log</label>
+          <button style="font-size:10px;padding:3px 10px" onclick="window.circuit.openClaudeLog()">Open log file</button>
+        </div>
+        <div style="font-size:9px;color:var(--text3);padding:3px 0 8px">Every query and Claude's raw response — saved to CIRCUIT Projects/ask-claude.log</div>
+        <div class="settings-row">
           <label>Check for updates</label>
           <button id="upd-btn" style="font-size:10px;padding:3px 10px" onclick="checkUpdates()">Check now</button>
         </div>

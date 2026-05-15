@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('circuit', {
   loadProject: (name) => ipcRenderer.invoke('load-project', { name }),
   listProjects: () => ipcRenderer.invoke('list-projects'),
   openProjectFolder: () => ipcRenderer.invoke('open-project-folder'),
+  openClaudeLog: () => ipcRenderer.invoke('open-claude-log'),
 
   // ── Auto-updater ─────────────────────────────────────────────────────────
   installUpdate: () => ipcRenderer.invoke('install-update'),
