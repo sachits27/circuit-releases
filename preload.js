@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('circuit', {
   openClaudeLog: () => ipcRenderer.invoke('open-claude-log'),
 
   // ── Auto-updater ─────────────────────────────────────────────────────────
-  installUpdate: () => ipcRenderer.invoke('install-update'),
+  installUpdate: () => ipcRenderer.send('install-update'),
   onUpdateAvailable: (cb) => ipcRenderer.on('update-available', (_, info) => cb(info)),
   onUpdateDownloaded: (cb) => ipcRenderer.on('update-downloaded', (_, info) => cb(info)),
 
